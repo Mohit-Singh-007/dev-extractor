@@ -3,7 +3,6 @@ package com.scrappi.main.model;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.util.List;
 
 @Entity
 @Getter
