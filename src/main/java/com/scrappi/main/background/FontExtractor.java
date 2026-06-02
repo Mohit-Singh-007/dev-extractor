@@ -23,9 +23,7 @@ public class FontExtractor {
                     Pattern.DOTALL);
 
     private static final Pattern FAMILY_PATTERN =
-            Pattern.compile(
-                    "font-family\\s*:\\s*['\"]?([^;'\"}]*)"
-            );
+            Pattern.compile("font-family\\s*:\\s*['\"]?([^;'\"\\}]+)['\"]?");
 
     private static final Pattern WEIGHT_PATTERN =
             Pattern.compile(

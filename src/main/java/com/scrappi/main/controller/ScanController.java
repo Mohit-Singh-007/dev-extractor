@@ -27,6 +27,6 @@ public class ScanController {
     public ScanRes getScan(
             @PathVariable Long id) {
 
-        return scanService.getScan(id);
+        return scanService.getScanById(id);
     }
 }

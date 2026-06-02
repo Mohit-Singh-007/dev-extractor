@@ -18,7 +18,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 
-// later using rabbitmq | kafka
 @Service
 @RequiredArgsConstructor
 public class ScanProcessing {
@@ -32,7 +31,8 @@ public class ScanProcessing {
 
    // @Async -> rabbit mq provides async behaviour
     public void process(Long scanId)  {
-        Scan scan = scanRepository.findById(scanId).orElseThrow();
+        Scan scan = scanRepository.findById(scanId)
+                .orElseThrow(()-> new RuntimeException("ScanID not found"));
 
 
         scan.setStatus(ScanStatus.PROCESSING);
@@ -42,24 +42,19 @@ public class ScanProcessing {
             Document document = Jsoup.connect(scan.getUrl()).get();
 
             String html = document.outerHtml();
+
             List<String> detectedTech = technologyDetector.detect(html);
-            List<Technology> technologies = detectedTech.stream().map(name ->
-                    Technology.builder().name(name).scan(scan).build()).toList();
+
+            List<Technology> technologies = detectedTech.stream()
+                    .map(name-> mapToTechnology(name,scan)).toList();
 
             List<ExtractedFont> extractedFonts =
                     fontExtractor.extract(document);
+
             List<Font> fonts =
                     extractedFonts.stream()
-                            .map(font ->
-                                    Font.builder()
-                                            .family(font.family())
-                                            .weight(font.weight())
-                                            .fileUrl(font.fileUrl())
-                                            .source(font.source())
-                                            .scan(scan)
-                                            .build()
-                            )
-                            .toList();
+                            .map(font -> mapToFont(font,scan)).toList();
+
             techRepository.saveAll(technologies);
             fontRepository.saveAll(fonts);
 
@@ -84,6 +79,23 @@ public class ScanProcessing {
         }
 
         scanRepository.save(scan);
+    }
+
+    private Technology mapToTechnology(String name,Scan scan){
+        return Technology.builder()
+                .name(name)
+                .scan(scan)
+                .build();
+    }
+
+    private Font mapToFont(ExtractedFont font , Scan scan){
+        return Font.builder()
+                .family(font.family())
+                .weight(font.weight())
+                .fileUrl(font.fileUrl())
+                .source(font.source())
+                .scan(scan)
+                .build();
     }
 
 

@@ -13,7 +13,6 @@ import java.util.List;
 @Table(name = "scan")
 @AllArgsConstructor
 @NoArgsConstructor
-@Builder
 @Getter
 @Setter
 public class Scan {

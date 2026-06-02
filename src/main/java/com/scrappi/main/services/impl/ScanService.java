@@ -7,17 +7,15 @@ import com.scrappi.main.dto.TechRes;
 import com.scrappi.main.model.Font;
 import com.scrappi.main.model.Scan;
 import com.scrappi.main.model.ScanStatus;
+import com.scrappi.main.model.Technology;
 import com.scrappi.main.queue.Producer;
 import com.scrappi.main.repository.ScanRepository;
 import com.scrappi.main.services.ScanImpl;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.stream.Collector;
+import java.util.*;
+
 import java.util.stream.Collectors;
 
 @Service
@@ -25,7 +23,6 @@ public class ScanService implements ScanImpl {
 
     private final ScanRepository scanRepository;
     private final Producer producer;
-//    private final ScanProcessing scanProcessing;
 
     public ScanService(ScanRepository scanRepository, Producer producer) {
         this.scanRepository = scanRepository;
@@ -41,52 +38,21 @@ public class ScanService implements ScanImpl {
 
         scanRepository.save(scan);
 
-        // BG-process - step [@Async]
-        // scanProcessing.process(scan.getId());
-        // rabbit-mq
+        // rabbit-mq __ need retries
         producer.publish(scan.getId());
 
         return scan.getId();
     }
 
-    public ScanRes getScan(Long id) {
+    public ScanRes getScanById(Long id) {
 
         Scan scan = scanRepository.findById(id)
                 .orElseThrow(() ->
                         new RuntimeException("Scan not found"));
 
-        List<TechRes> res = scan.getTechnologies().stream().map(tech ->
-                new TechRes(tech.getId(),tech.getName())).toList();
+        List<TechRes> res = mapToTechRES(scan.getTechnologies());
 
-        Map<String,List<Font>> fonts = scan.getFonts().stream().collect(
-                Collectors.groupingBy(Font::getFamily)
-        );
-        List<FontRes> fontRes =
-                fonts.entrySet()
-                        .stream()
-                        .map(entry -> {
-
-                            Set<Integer> weights =
-                                    entry.getValue()
-                                            .stream()
-                                            .map(Font::getWeight)
-                                            .collect(Collectors.toSet());
-
-                            List<String> urls =
-                                    entry.getValue()
-                                            .stream()
-                                            .map(Font::getFileUrl)
-                                            .filter(Objects::nonNull)
-                                            .distinct()
-                                            .toList();
-
-                            return new FontRes(
-                                    entry.getKey(),
-                                    weights,
-                                    urls
-                            );
-                        })
-                        .toList();
+        List<FontRes> fontRes = mapToFontRES(scan.getFonts());
 
         return new ScanRes(
                 scan.getId(),
@@ -100,5 +66,34 @@ public class ScanService implements ScanImpl {
                 res,
                 fontRes
         );
+    }
+
+    private List<TechRes> mapToTechRES(List<Technology> technology){
+        return technology
+                .stream()
+                .map(tech -> new TechRes(tech.getId(),tech.getName())).toList();
+    }
+
+    private List<FontRes> mapToFontRES(List<Font> fonts){
+        return fonts
+                .stream()
+                .collect(Collectors.groupingBy(Font::getFamily))
+                .entrySet()
+                .stream()
+                .map(this::fontMapper)
+                .toList();
+    }
+    private FontRes fontMapper(Map.Entry<String,List<Font>> entry){
+        Set<Integer> weights = entry.getValue().stream()
+                .map(Font::getWeight)
+                .collect(Collectors.toSet());
+
+        List<String> urls = entry.getValue().stream()
+                .map(Font::getFileUrl)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+
+        return new FontRes(entry.getKey(), weights, urls);
     }
 }

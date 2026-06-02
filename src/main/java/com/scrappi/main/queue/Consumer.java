@@ -9,11 +9,6 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class Consumer {
 
-//    @RabbitListener(queues = RabbitMQConfig.SCAN_QUEUE)
-//    public void listen(String msg){
-//        System.out.println("RECIEVED: "+msg);
-//    }
-
     private final ScanProcessing scanProcessing;
     @RabbitListener(queues = RabbitMQConfig.SCAN_QUEUE)
     public void consume(Long scanId){
