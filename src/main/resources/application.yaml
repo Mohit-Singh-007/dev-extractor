@@ -1,0 +1,20 @@
+spring:
+  application:
+    name: main
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/devscope
+    username: postgres
+    password: admin123
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+
+  rabbitmq:
+      host: localhost
+      port: 5672
+      username: guest
+      password: guest
