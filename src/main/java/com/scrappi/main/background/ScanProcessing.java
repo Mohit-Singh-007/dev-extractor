@@ -56,14 +56,16 @@ public class ScanProcessing {
             scan.setCompletedAt(LocalDateTime.now());
             scanRepository.save(scan);
 
-            publisher.publish(scanId,ScanStatus.COMPLETED,"SCAN COMPLETED");
+            silentPublish(scanId,ScanStatus.COMPLETED,"SCAN COMPLETED");
 
         }catch (Exception ex){
             log.error("Scan failed for id {}: {}", scanId, ex.getMessage(), ex);
             scan.setStatus(ScanStatus.FAILED);
             scanRepository.save(scan);
-            publisher.publish(scanId, ScanStatus.FAILED, ex.getMessage());
-            throw new RuntimeException(ex); // rethrow so Consumer can handle retry
+
+            // IF FAILS -> scan still failed in DB
+            silentPublish(scanId, ScanStatus.FAILED, ex.getMessage());
+            throw new RuntimeException(ex); // rethrow so Consumer can handle retry -> for main scan process
         }
 
 
@@ -87,6 +89,14 @@ public class ScanProcessing {
                 .source(font.source())
                 .scan(scan)
                 .build();
+    }
+
+    private void silentPublish(Long scanId, ScanStatus status, String message) {
+        try {
+            publisher.publish(scanId, status, message);
+        } catch (Exception e) {
+            log.warn("Failed to publish status event for scanId={}: {}", scanId, e.getMessage());
+        }
     }
 
 
