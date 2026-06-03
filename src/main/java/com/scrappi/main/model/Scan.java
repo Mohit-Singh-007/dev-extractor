@@ -48,13 +48,5 @@ public class Scan {
             cascade = CascadeType.ALL,
             orphanRemoval = true
     )
-    private List<Technology> technologies =
-            new ArrayList<>();
-
-    @OneToMany(
-            mappedBy = "scan",
-            cascade = CascadeType.ALL,
-            orphanRemoval = true
-    )
     private List<Font> fonts = new ArrayList<>();
 }

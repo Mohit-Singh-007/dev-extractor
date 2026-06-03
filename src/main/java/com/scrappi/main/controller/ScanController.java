@@ -1,7 +1,7 @@
 package com.scrappi.main.controller;
 
-import com.scrappi.main.dto.ScanReq;
-import com.scrappi.main.dto.ScanRes;
+import com.scrappi.main.dto.scan.ScanReq;
+import com.scrappi.main.dto.scan.ScanRes;
 import com.scrappi.main.services.impl.ScanService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

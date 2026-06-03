@@ -1,4 +1,4 @@
-package com.scrappi.main.dto;
+package com.scrappi.main.dto.scan;
 
 import jakarta.validation.constraints.NotBlank;
 

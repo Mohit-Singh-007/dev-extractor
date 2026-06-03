@@ -1,13 +1,11 @@
 package com.scrappi.main.services.impl;
 
-import com.scrappi.main.dto.FontRes;
-import com.scrappi.main.dto.ScanReq;
-import com.scrappi.main.dto.ScanRes;
-import com.scrappi.main.dto.TechRes;
+import com.scrappi.main.dto.font.FontRes;
+import com.scrappi.main.dto.scan.ScanReq;
+import com.scrappi.main.dto.scan.ScanRes;
 import com.scrappi.main.model.Font;
 import com.scrappi.main.model.Scan;
 import com.scrappi.main.model.ScanStatus;
-import com.scrappi.main.model.Technology;
 import com.scrappi.main.queue.Producer;
 import com.scrappi.main.repository.ScanRepository;
 import com.scrappi.main.services.ScanImpl;
@@ -50,7 +48,6 @@ public class ScanService implements ScanImpl {
                 .orElseThrow(() ->
                         new RuntimeException("Scan not found"));
 
-        List<TechRes> res = mapToTechRES(scan.getTechnologies());
 
         List<FontRes> fontRes = mapToFontRES(scan.getFonts());
 
@@ -63,16 +60,10 @@ public class ScanService implements ScanImpl {
                 scan.getTotalLinks(),
                 scan.getTotalImages(),
                 scan.getTotalScripts(),
-                res,
                 fontRes
         );
     }
 
-    private List<TechRes> mapToTechRES(List<Technology> technology){
-        return technology
-                .stream()
-                .map(tech -> new TechRes(tech.getId(),tech.getName())).toList();
-    }
 
     private List<FontRes> mapToFontRES(List<Font> fonts){
         return fonts

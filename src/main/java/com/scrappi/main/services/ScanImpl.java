@@ -1,9 +1,7 @@
 package com.scrappi.main.services;
 
-import com.scrappi.main.dto.ScanReq;
-import com.scrappi.main.dto.ScanRes;
-
-import java.util.Optional;
+import com.scrappi.main.dto.scan.ScanReq;
+import com.scrappi.main.dto.scan.ScanRes;
 
 
 public interface ScanImpl {

@@ -1,14 +1,11 @@
 package com.scrappi.main.background;
 
-import com.scrappi.main.dto.ExtractedFont;
+import com.scrappi.main.dto.font.ExtractedFont;
 import com.scrappi.main.model.Font;
 import com.scrappi.main.model.Scan;
 import com.scrappi.main.model.ScanStatus;
-import com.scrappi.main.model.Technology;
 import com.scrappi.main.repository.FontRepository;
 import com.scrappi.main.repository.ScanRepository;
-import com.scrappi.main.repository.TechRepository;
-import com.scrappi.main.utils.TechnologyDetector;
 import lombok.RequiredArgsConstructor;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -23,8 +20,6 @@ import java.util.List;
 public class ScanProcessing {
 
     private final ScanRepository scanRepository;
-    private final TechnologyDetector technologyDetector;
-    private final TechRepository techRepository;
     private final FontRepository fontRepository;
     private final FontExtractor fontExtractor;
 
@@ -43,11 +38,6 @@ public class ScanProcessing {
 
             String html = document.outerHtml();
 
-            List<String> detectedTech = technologyDetector.detect(html);
-
-            List<Technology> technologies = detectedTech.stream()
-                    .map(name-> mapToTechnology(name,scan)).toList();
-
             List<ExtractedFont> extractedFonts =
                     fontExtractor.extract(document);
 
@@ -55,7 +45,6 @@ public class ScanProcessing {
                     extractedFonts.stream()
                             .map(font -> mapToFont(font,scan)).toList();
 
-            techRepository.saveAll(technologies);
             fontRepository.saveAll(fonts);
 
             String title = document.title();
@@ -81,12 +70,7 @@ public class ScanProcessing {
         scanRepository.save(scan);
     }
 
-    private Technology mapToTechnology(String name,Scan scan){
-        return Technology.builder()
-                .name(name)
-                .scan(scan)
-                .build();
-    }
+
 
     private Font mapToFont(ExtractedFont font , Scan scan){
         return Font.builder()

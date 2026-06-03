@@ -1,5 +1,6 @@
-package com.scrappi.main.dto;
+package com.scrappi.main.dto.scan;
 
+import com.scrappi.main.dto.font.FontRes;
 import com.scrappi.main.model.ScanStatus;
 
 import java.util.List;
@@ -14,6 +15,5 @@ public record ScanRes(
         Integer totalLinks,
         Integer totalImages,
         Integer totalScripts,
-        List<TechRes> technologies,
         List<FontRes> fonts
 ) {}

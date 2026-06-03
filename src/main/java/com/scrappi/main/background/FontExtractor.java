@@ -1,6 +1,7 @@
 package com.scrappi.main.background;
 
-import com.scrappi.main.dto.ExtractedFont;
+import com.scrappi.main.dto.font.ExtractedFont;
+import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -16,6 +17,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @Service
+@Slf4j
 public class FontExtractor {
 
     private static final Pattern FONT_FACE_PATTERN =
@@ -35,90 +37,87 @@ public class FontExtractor {
                     "url\\(['\"]?([^'\")]+)['\"]?\\)"
             );
 
-    public List<ExtractedFont> extract(Document document) {
+    private static final Pattern IMPORT_PATTERN =
+            Pattern.compile("@import\\s+url\\(['\"]?([^'\"\\)]+)['\"]?\\)|@import\\s+['\"]([^'\"]+)['\"]");
 
+    public List<ExtractedFont> extract(Document document) {
         Set<String> unique = new HashSet<>();
         List<ExtractedFont> fonts = new ArrayList<>();
+        Set<String> visitedUrls = new HashSet<>(); // avoid infinite loops
 
-        Elements stylesheets =
-                document.select("link[rel=stylesheet]");
-
+        // handle <link rel=stylesheet>
+        Elements stylesheets = document.select("link[rel=stylesheet]");
         for (Element stylesheet : stylesheets) {
-
-            try {
-
-                String cssUrl =
-                        stylesheet.absUrl("href");
-
-                if (cssUrl.isBlank()) {
-                    continue;
-                }
-
-                String css =
-                        Jsoup.connect(cssUrl)
-                                .ignoreContentType(true)
-                                .execute()
-                                .body();
-
-                extractFromCss(
-                        css,
-                        cssUrl,
-                        unique,
-                        fonts
-                );
-
-            } catch (Exception ignored) {
+            String cssUrl = stylesheet.absUrl("href");
+            if (!cssUrl.isBlank()) {
+                fetchAndExtract(cssUrl, unique, fonts, visitedUrls);
             }
         }
 
+        // handle inline <style> tags
+        Elements styleTags = document.select("style");
+        for (Element styleTag : styleTags) {
+            extractFromCss(styleTag.html(), document.baseUri(), unique, fonts, visitedUrls);
+        }
+
         return fonts;
+    }
+
+    private void fetchAndExtract(
+            String cssUrl,
+            Set<String> unique,
+            List<ExtractedFont> fonts,
+            Set<String> visitedUrls
+    ) {
+        if (!visitedUrls.add(cssUrl)) return;
+
+        try {
+            String css = Jsoup.connect(cssUrl)
+                    .ignoreContentType(true)
+                    .userAgent("Mozilla/5.0") // some servers block default Jsoup UA
+                    .execute()
+                    .body();
+
+            extractFromCss(css, cssUrl, unique, fonts, visitedUrls);
+        } catch (Exception e) {
+            log.warn("Failed to fetch CSS: {}", cssUrl);
+        }
     }
 
     private void extractFromCss(
             String css,
             String source,
             Set<String> unique,
-            List<ExtractedFont> fonts
+            List<ExtractedFont> fonts,
+            Set<String> visitedUrls
     ) {
+        // recursively follow @import rules
+        Matcher importMatcher = IMPORT_PATTERN.matcher(css);
+        while (importMatcher.find()) {
+            String importUrl = importMatcher.group(1) != null
+                    ? importMatcher.group(1)
+                    : importMatcher.group(2);
 
-        Matcher fontFaceMatcher =
-                FONT_FACE_PATTERN.matcher(css);
+            if (importUrl != null) {
+                String resolvedUrl = resolveFontUrl(source, importUrl);
+                fetchAndExtract(resolvedUrl, unique, fonts, visitedUrls);
+            }
+        }
 
+        // extract @font-face blocks
+        Matcher fontFaceMatcher = FONT_FACE_PATTERN.matcher(css);
         while (fontFaceMatcher.find()) {
+            String block = fontFaceMatcher.group(1);
+            String family = extractFamily(block);
+            Integer weight = extractWeight(block);
+            String fileUrl = resolveFontUrl(source, extractUrl(block));
 
-            String block =
-                    fontFaceMatcher.group(1);
+            if (family == null || family.toLowerCase().contains("fallback")) continue;
 
-            String family =
-                    extractFamily(block);
+            String key = family + "|" + weight;
+            if (!unique.add(key)) continue;
 
-            Integer weight =
-                    extractWeight(block);
-
-            String fileUrl =
-                    resolveFontUrl(source,extractUrl(block));
-
-
-            if (family == null || family.toLowerCase().contains("fallback")) {
-                continue;
-            }
-
-            String key =
-                    family + "|" +
-                            weight;
-
-            if (!unique.add(key)) {
-                continue;
-            }
-
-            fonts.add(
-                    new ExtractedFont(
-                            family,
-                            weight,
-                            fileUrl,
-                            source
-                    )
-            );
+            fonts.add(new ExtractedFont(family, weight, fileUrl, source));
         }
     }
 
@@ -131,7 +130,6 @@ public class FontExtractor {
                 ? matcher.group(1).trim()
                 : null;
     }
-
     private Integer extractWeight(String block) {
 
         Matcher matcher =
@@ -143,7 +141,6 @@ public class FontExtractor {
         )
                 : 400;
     }
-
     private String extractUrl(String block) {
 
         Matcher matcher =
