@@ -18,3 +18,9 @@ spring:
       port: 5672
       username: guest
       password: guest
+      publisher-confirm-type: correlated
+      publisher-returns: true
+      listener:
+        simple:
+          acknowledge-mode: manual
+          prefetch: 3 #max 3 scans concurrently
