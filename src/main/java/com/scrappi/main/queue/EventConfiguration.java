@@ -1,6 +1,7 @@
 package com.scrappi.main.queue;
 
 import org.springframework.amqp.core.*;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -20,7 +21,7 @@ public class EventConfiguration {
     }
 
     @Bean
-    public Binding statusBinding(Queue queue,FanoutExchange exchange){
+    public Binding statusBinding(@Qualifier("statusQueue") Queue queue, FanoutExchange exchange){
         return BindingBuilder.bind(queue).to(exchange);
     }
 }

@@ -22,7 +22,6 @@ public class Consumer {
 
     @RabbitListener(queues = RabbitMQConfig.SCAN_QUEUE)
     public void consume(Long scanId, Message message, Channel channel) throws IOException {
-
         int count = getRetryCount(message);
 
         try {
@@ -30,7 +29,7 @@ public class Consumer {
             channel.basicAck(message.getMessageProperties().getDeliveryTag(),false);
             log.info("Scan {} processed successfully", scanId);
         } catch (Exception e) {
-            log.error("Scan {} failed, retry count: {}", scanId, count);
+            log.error("Scan {} failed, retry count: {}, error: {}", scanId, count, e.getMessage());
 
             if(count >= MAX_RETRIES){
                 // max retries reached — send to DLQ
@@ -43,8 +42,6 @@ public class Consumer {
             }
 
         }
-
-        scanProcessing.process(scanId);
     }
     private void publishRetry(Long scanId,int count){
         producer.publishToRetry(scanId,count);

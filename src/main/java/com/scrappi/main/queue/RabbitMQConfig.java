@@ -2,6 +2,7 @@ package com.scrappi.main.queue;
 
 
 import org.springframework.amqp.core.*;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -58,17 +59,17 @@ public class RabbitMQConfig {
 
 
     @Bean
-    public Binding scanBinding(Queue queue , TopicExchange exchange){
+    public Binding scanBinding(@Qualifier("scanQueue") Queue queue , TopicExchange exchange){
         return BindingBuilder.bind(queue).to(exchange).with(ROUTING_KEY+".#");
     }
 
     @Bean
-    public Binding dlqBinding(Queue queue,DirectExchange exchange){
+    public Binding dlqBinding(@Qualifier("dlq") Queue queue,DirectExchange exchange){
         return BindingBuilder.bind(queue).to(exchange).with(SCAN_DLQ_ROUTING_KEY);
     }
 
     @Bean
-    public Binding retryBinding(Queue queue,TopicExchange exchange){
+    public Binding retryBinding(@Qualifier("retryQueue") Queue queue,TopicExchange exchange){
         return BindingBuilder.bind(queue).to(exchange).with("retry.key.#");
     }
 
